@@ -62,6 +62,9 @@ from pyspark.sql import Window
 from pyspark.sql.functions import when
 from pyspark.context import SparkContext
 
+from pyspark.sql.functions import to_date
+from pyspark.sql.functions import col
+
 win = Window.orderBy("statdate")
 
 df.select('iso_code', to_date(col("date"),"yyyy-MM-dd").alias("statdate"), 'new_cases')\
@@ -83,3 +86,25 @@ df.select('iso_code', to_date(col("date"),"yyyy-MM-dd").alias("statdate"), 'new_
 #|2021-03-31|8156.0|   8162.0|  -6.0|
 #+----------+------+---------+------+
 #
+
+
+# examples
+
+from pyspark.sql import SparkSession
+
+spark = (SparkSession
+    .builder.appName("test cluster mode")
+    .config("spark.ui.enabled", "true")
+    .config("spark.sql.shuffle.partitions", 6)
+    .getOrCreate())
+tableA = spark.range(200000000)
+tableB = spark.range(150000000)
+
+
+result = (tableA.join(tableB, tableA.id==tableB.id)
+    .groupBy().count())
+    
+
+    
+input("Press any key to contunue ...")
+    
