@@ -1,0 +1,18 @@
+jq -rc . /mnt/c/Users/vanio/Desktop/advanced-conda/programs/yandex-cloud/data2.json | kafkacat -P  \
+      -b rc1a-ipedhaa0dlfrq8cm.mdb.yandexcloud.net:9091 \
+      -t ch_metric \
+      -X security.protocol=SASL_SSL \
+      -X sasl.mechanisms=SCRAM-SHA-512 \
+      -X sasl.username=ch_user \
+      -X sasl.password=ch_password1 \
+      -X ssl.ca.location=/usr/local/share/ca-certificates/Yandex/YandexCA.crt -Z
+     
+kafkacat -C  \
+      -b rc1a-ipedhaa0dlfrq8cm.mdb.yandexcloud.net:9091 \
+      -t ch_metric \
+      -X security.protocol=SASL_SSL \
+      -X sasl.mechanisms=SCRAM-SHA-512 \
+      -X sasl.username=ch_user \
+      -X sasl.password=ch_password1 \
+      -X ssl.ca.location=/usr/local/share/ca-certificates/Yandex/YandexCA.crt -Z
+

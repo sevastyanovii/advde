@@ -1,0 +1,9 @@
+jq -rc file | kafkacat -P  \
+      -b rc1a-ipedhaa0dlfrq8cm.mdb.yandexcloud.net:9091 \
+      -t ch_data \
+      -X security.protocol=SASL_SSL \
+      -X sasl.mechanisms=SCRAM-SHA-512 \
+      -X sasl.username=ch_kafka \
+      -X sasl.password=ch_kafka \
+      -X ssl.ca.location=/usr/local/share/ca-certificates/Yandex/YandexCA.crt -Z -K:
+     
