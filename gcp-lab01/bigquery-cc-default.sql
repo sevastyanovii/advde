@@ -1,5 +1,7 @@
 --bigquery-public-data.ml_datasets.credit_card_default 
 -- 
+-- данные в parquet из BigQuery выгружены с помощью Dataflow template job
+
 create table `endless-radar-330119.advde_ds_us.credit_card_default` as
 SELECT
 		*
