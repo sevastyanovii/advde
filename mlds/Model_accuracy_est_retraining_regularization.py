@@ -58,3 +58,5 @@ for predicted_prob, actual in zip(predictions[:, 1], Y_test):
 pred = model.predict(X_test)
 
 print(tp, fp, fn, tn)
+
+, 'temperature', 'pressure', 'light', 'air_humidity', 'volume'
