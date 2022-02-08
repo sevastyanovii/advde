@@ -1,0 +1,38 @@
+{
+  "Records": [
+    {
+      "eventVersion": "2.1",
+      "eventSource": "aws:s3",
+      "awsRegion": "eu-central-1",
+      "eventTime": "2022-02-07T11:49:02.152Z",
+      "eventName": "ObjectCreated:Put",
+      "userIdentity": {
+        "principalId": "A239CX9T4R8ISE"
+      },
+      "requestParameters": {
+        "sourceIPAddress": "84.51.113.133"
+      },
+      "responseElements": {
+        "x-amz-request-id": "C32T60QCA7VVBR39",
+        "x-amz-id-2": "+50KhDJ4bQyoGXdo8mTS1fF8z8nQXSZP4E4zHe1wZTw170kfUPcUbTFzEYfdfChbEeBAEEcxVI1rtVgswO0ZDtd152B878eh"
+      },
+      "s3": {
+        "s3SchemaVersion": "1.0",
+        "configurationId": "CreateEvent",
+        "bucket": {
+          "name": "advde-backet2",
+          "ownerIdentity": {
+            "principalId": "A239CX9T4R8ISE"
+          },
+          "arn": "arn:aws:s3:::advde-backet2"
+        },
+        "object": {
+          "key": "JC-202201-citibike-tripdata.csv.zip",
+          "size": 815568,
+          "eTag": "b0e8f122113298e77b01229b6797df22",
+          "sequencer": "006201072E1FA0722E"
+        }
+      }
+    }
+  ]
+}
