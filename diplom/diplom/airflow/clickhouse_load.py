@@ -1,5 +1,6 @@
 from clickhouse_driver import Client
 import pandas as pd
+import boto3
 
 client = Client(host='130.61.143.82', settings={'use_numpy': True})
 
@@ -37,3 +38,18 @@ print('inserted', client.insert_dataframe(
     'INSERT INTO advdedb.ride VALUES',
     pd.DataFrame(data)
 ))
+
+data = client.query_dataframe("""
+select toStartOfDay(started_at) trip_date, count(1) day_count
+  from advdedb.ride
+  group by toStartOfDay(started_at)
+  order by trip_date
+""")
+
+report_file = 'rep1_202201.csv'
+report_dir = 'C:\\Users\\vanio\\temp\\'
+data.to_csv(report_dir + report_file, index=False)
+
+
+s3 = boto3.resource('s3')
+s3.Bucket('advde-bucket').upload_file(report_dir + report_file, report_file)
