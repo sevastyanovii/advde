@@ -58,7 +58,7 @@ else:
             # boto3.set_stream_logger('boto3.resources', logging.DEBUG)
             session = boto3.Session(
                 aws_access_key_id='AKIAZB57MSK74V2NTKFO',
-                aws_secret_access_key='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'
+                aws_secret_access_key='ZlPcFNfpUASKgNupmo4aRYyqKmj44FGUPWvNCt'
             )
             sqs_client = session.client('sqs', region_name="eu-central-1")
 
@@ -96,7 +96,7 @@ else:
             import boto3
             s3 = boto3.resource(service_name='s3',
                                 aws_access_key_id='AKIAZB57MSK74V2NTKFO',
-                                aws_secret_access_key='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')
+                                aws_secret_access_key='ZlPcFNfpUASKgNupmo4aRYyqKmj44FGUPWvNCt')
             tmpfile = tempfile.NamedTemporaryFile(prefix='aws')
             tmpfile.close()
             s3.Bucket("advde-backet2").download_file(Key=file, Filename=tmpfile.name)
@@ -218,7 +218,7 @@ else:
             bucket = 'advde-bucket'
             s3 = boto3.resource('s3',
                                 aws_access_key_id='AKIAZB57MSK74V2NTKFO',
-                                aws_secret_access_key='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')
+                                aws_secret_access_key='ZlPcFNfpUASKgNupmo4aRYyqKmj44FGUPWvNCt')
             print(f'about to upload file {repdata["temp_file"]} to {repdata["repfile"]} on bucket {bucket}')
             s3.Bucket(bucket).upload_file(repdata["temp_file"], repdata["repfile"])
             print(f"Uploaded successfully: {repdata['repfile']} on bucket {bucket}")
