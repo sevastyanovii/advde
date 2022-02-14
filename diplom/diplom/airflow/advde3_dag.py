@@ -4,6 +4,7 @@ from datetime import datetime
 import zipfile
 import tempfile
 from airflow.exceptions import AirflowSkipException
+import os
 
 from airflow.decorators import dag, task
 
@@ -16,6 +17,33 @@ if not shutil.which("virtualenv"):
 else:
     @dag(schedule_interval=None, start_date=datetime(2021, 1, 1), catchup=False, tags=['advde'])
     def advde3_taskflow():
+
+        def create_temp_file():
+            tmpfile = tempfile.NamedTemporaryFile(prefix='aws')
+            tmpfile.close()
+            return tmpfile.name
+
+        def unzip_file(zf):
+            if zipfile.is_zipfile(zf):
+                with zipfile.ZipFile(zf) as zip_file:
+                    for member in zip_file.namelist():
+                        filename = os.path.basename(member)
+                        # skip directories
+                        if not filename:
+                            continue
+
+                        if member.endswith(".csv") and not member.startswith(".") and member.find("/") < 0:
+                            # copy file (taken from zipfile's extract)
+                            source = zip_file.open(member)
+                            unzipped = create_temp_file()
+                            target = open(unzipped, "wb")
+                            with source, target:
+                                shutil.copyfileobj(source, target)
+                            print(f'unzipped {member} into {unzipped}')
+                            return unzipped
+                        print(f'File "{zf}" is not contain data. Will be skipped...')
+                    else:
+                        print(f'File "{zf}" is not zipped. Will be skipped...')
 
         @task.virtualenv(
             use_dill=True,
@@ -63,43 +91,6 @@ else:
             d = ast.literal_eval(message)
             return {"bucket": d["Records"][0]["s3"]["bucket"]["arn"], "file": d["Records"][0]["s3"]["object"]["key"]}
 
-        # @task
-        # def download_file(file, todir):
-        #     import boto3
-        #     session = boto3.Session(
-        #         aws_access_key_id='AKIAZB57MSK74V2NTKFO',
-        #         aws_secret_access_key='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'
-        #     )
-        #     s3client = session.client('s3', region_name="eu-central-1")
-        #     fn = todir + "/" + file["file"]
-        #     print(f'Attempting to download file "{file["file"]}" to directory "{todir}"', f"full path: {fn}")
-        #     s3client.download_file("advde-backet2", file["file"], fn)
-        #     if zipfile.is_zipfile(fn):
-        #         with zipfile.ZipFile(fn, 'r') as zip_ref:
-        #             for name in zip_ref.namelist():
-        #                 if name.endswith(".csv") and not name.startswith(".") and name.find("/") < 0:
-        #                     zip_ref.extract(name, todir)
-        #                     return todir + "/" + name
-        #     else:
-        #         print(f'File "{fn}" is not zipped. Will be skipped...')
-        #     raise AirflowSkipException("task skipped: target file is not found")
-        # @task
-        # def download_file2(file, todir):
-        #     import boto3
-        #     import os
-        #     import uuid
-        #
-        #     s3 = boto3.resource(service_name='s3',
-        #                         aws_access_key_id='AKIAZB57MSK74V2NTKFO',
-        #                         aws_secret_access_key='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')
-        #     folder = str(uuid.uuid1())
-        #     dir_name = os.path.abspath(todir)
-        #     os.mkdir(os.path.join(dir_name, folder))
-        #     full_file_name = os.path.join(dir_name, folder, file["file"])
-        #     s3.Bucket("advde-backet2").download_file(Key=file["file"], Filename=full_file_name)
-        #     print('downloaded 2 OK')
-        #     return full_file_name
-
         @task
         def download_file3(file):
             import boto3
@@ -108,9 +99,16 @@ else:
                                 aws_secret_access_key='6ZlPcFNfpUASKgNupmo4aRYyqKmj44FGUPWvNCtZ')
             tmpfile = tempfile.NamedTemporaryFile(prefix='aws')
             tmpfile.close()
-            s3.Bucket("advde-backet2").download_file(Key='JC-201810-citibike-tripdata.csv.zip', Filename=tmpfile.name)
-            print(f'downloaded to {tmpfile.name} "2" OK')
+            s3.Bucket("advde-backet2").download_file(Key=file, Filename=tmpfile.name)
+            print(f'file {file} downloaded to {tmpfile.name} "2" OK')
             return tmpfile.name
+
+        @task
+        def unzip_file0(file):
+            unzipped = unzip_file(file)
+            if len(unzipped) == 0:
+                raise AirflowSkipException()
+            return unzipped
 
         @task()
         def end_operation(data):
@@ -119,8 +117,9 @@ else:
 
         message = receive_message()
         file_data = get_file_name(message=message)
-        downloaded = download_file3(file_data)
-        end_operation(downloaded)
+        downloaded = download_file3(file_data["file"])
+        unzipped = unzip_file0(downloaded)
+        end_operation(unzipped)
 
 
     tutorial_etl_dag = advde3_taskflow()
