@@ -149,17 +149,107 @@ else:
 
             return load_data(file)
 
-        @task()
-        def end_operation(data):
-            print(f"End of DAG: {datetime.date}")
-            print(f"final data: {data}")
+        @task.virtualenv(
+            use_dill=True,
+            system_site_packages=False,
+            requirements=['clickhouse_driver', 'pandas'],
+        )
+        def report1(chain_message):
+            from clickhouse_driver import Client
+            import pandas as pd
+            import random as rnd
+            import tempfile
+
+            def create_temp_file0():
+                tmpfile = tempfile.NamedTemporaryFile(prefix='aws')
+                tmpfile.close()
+                return tmpfile.name
+
+            client = Client(host='130.61.143.82', settings={'use_numpy': True})
+            data = client.query_dataframe("""
+            select toStartOfDay(started_at) trip_date, count(1) day_count
+              from advdedb.ride
+              group by toStartOfDay(started_at)
+              order by trip_date
+            """)
+            sfx = pd.to_datetime(data.loc[1]['trip_date']).strftime('%Y%m')
+            report_file = f'rep1_{sfx}_{round(rnd.random() * 1000)}.csv'
+            rep1file_temp = create_temp_file0()
+            data.to_csv(rep1file_temp, index=False)
+            print(f'created report1 file "{rep1file_temp}"')
+            return {"repfile": report_file, "temp_file": rep1file_temp, "sfx": sfx}
+
+        @task.virtualenv(
+            use_dill=True,
+            system_site_packages=False,
+            requirements=['clickhouse_driver', 'pandas'],
+        )
+        def report2(rep_data1):
+            from clickhouse_driver import Client
+            import pandas as pd
+            import random as rnd
+            import tempfile
+
+            def create_temp_file0():
+                tmpfile = tempfile.NamedTemporaryFile(prefix='aws')
+                tmpfile.close()
+                return tmpfile.name
+
+            print(f'report2 accepted previous rep_data1: {rep_data1}')
+
+            client = Client(host='130.61.143.82', settings={'use_numpy': True})
+            data = client.query_dataframe("""
+                select avg(day_count) avg_count from (
+                    select toStartOfDay(started_at) trip_date, count(1) day_count
+                      from advdedb.ride
+                      group by toStartOfDay(started_at)
+                )
+            """)
+            report_file = f'rep2_{rep_data1["sfx"]}_{round(rnd.random() * 1000)}.csv'
+            repfile_temp = create_temp_file0()
+            data.to_csv(repfile_temp, index=False)
+            return {"repfile": report_file, "temp_file": repfile_temp, "sfx": rep_data1['sfx']}
+
+        def upload_rep(repdata):
+            import boto3
+
+            print(f'Accepted repdata: {repdata}')
+
+            bucket = 'advde-bucket'
+            s3 = boto3.resource('s3',
+                                aws_access_key_id='AKIAZB57MSK74V2NTKFO',
+                                aws_secret_access_key='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')
+            print(f'about to upload file {repdata["temp_file"]} to {repdata["repfile"]} on bucket {bucket}')
+            s3.Bucket(bucket).upload_file(repdata["temp_file"], repdata["repfile"])
+            print(f"Uploaded successfully: {repdata['repfile']} on bucket {bucket}")
+
+        @task
+        def upload_rep1(repdata):
+            upload_rep(repdata)
+
+        @task
+        def upload_rep2(repdata):
+            upload_rep(repdata)
+
+        # @task
+        # def upload_rep3(repdata):
+        #     upload_rep(repdata)
+
+        # @task()
+        # def end_operation(data):
+        #     print(f"End of DAG: {datetime.date}")
+        #     print(f"final data: {data}")
 
         message = receive_message()
         file_data = get_file_name(message=message)
         downloaded = download_file3(file_data["file"])
         unzipped = unzip_file0(downloaded)
         final_msg = load_data0(unzipped)
-        end_operation(final_msg)
+        rep_data1 = report1(final_msg)
+        upload_rep1(rep_data1)
+        rep_data2 = report2(rep_data1)
+        upload_rep2(rep_data2)
+        # end_operation(final_msg)
 
 
     tutorial_etl_dag = advde3_taskflow()

@@ -53,3 +53,14 @@ data.to_csv(report_dir + report_file, index=False)
 
 s3 = boto3.resource('s3')
 s3.Bucket('advde-bucket').upload_file(report_dir + report_file, report_file)
+
+data = client.query_dataframe("""
+select avg(day_count) avg_count from (
+    select toStartOfDay(started_at) trip_date, count(1) day_count
+      from advdedb.ride
+      group by toStartOfDay(started_at)
+)
+""")
+report_file = 'rep2_202201.csv'
+report_dir = 'C:\\Users\\vanio\\temp\\'
+data.to_csv(report_dir + report_file, index=False)
