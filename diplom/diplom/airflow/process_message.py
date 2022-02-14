@@ -1,6 +1,7 @@
 import boto3
 import ast
 import zipfile
+import tempfile
 
 
 def get_file(message):
@@ -21,8 +22,38 @@ def download_file(file, todir):
         return False
 
 
+def download_file2():
+    s3 = boto3.resource(service_name='s3')
+    s3.Bucket("advde-backet2").download_file(Key='JC-201810-citibike-tripdata.csv.zip',
+                                             Filename='C:\\Users\\vanio\\temp\\file1.zip')
+    print('downloaded 2 OK')
+
+
+def download_file3():
+    s3 = boto3.resource(service_name='s3',
+                        aws_access_key_id='AKIAZB57MSK74V2NTKFO',
+                        aws_secret_access_key='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')
+    tmpfile = tempfile.NamedTemporaryFile(prefix='aws')
+    tmpfile.close()
+    s3.Bucket("advde-backet2").download_file(Key='JC-201810-citibike-tripdata.csv.zip', Filename=tmpfile.name)
+    print(f'downloaded to {tmpfile.name} "2" OK')
+
+
+def print_contents():
+    s3 = boto3.resource('s3')
+    my_bucket = s3.Bucket(name='advde-backet2')
+    for my_bucket_object in my_bucket.objects.all():
+        print(my_bucket_object)
+
+
 with open("./event_msg.json", "r") as f:
     d = f.read()
     file = get_file(d)
     print(file)
-    print(download_file(file, "C:\\Users\\vanio\\temp"))
+    with tempfile.TemporaryDirectory(prefix='aws') as tmpdirname:
+        print(download_file(file, tmpdirname))
+        print(f'downloaded file "{file}" to "{tmpdirname}"')
+
+print_contents()
+
+download_file3()

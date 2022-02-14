@@ -1,0 +1,114 @@
+{
+  "Messages": [
+    {
+      "MessageId": "4d017ac8-da10-4230-a4c8-bb943a0c69b1",
+      "ReceiptHandle": "AQEB2A6AGJ9BnZmx2Y/LEjpS2AnHsALfnw+Em3Qim6ZQ1Zj/RVq7f/R04FU5RWD0Irm139ZjB2k26vOH67nPZnvKYPVA6ropN/U1sjQnDVvNTITAopHYnZI203ip74IDw4QKAF7k2T2uYnshdv2m5dTTWVrKZnOuBU/qkEzLWmKWng36SmcuYqUKyYaqSfOvWcPNrxGz2kbJsTi/H6xVgKwFV1CjrsUiFAw3GUJuBlQKyz2vm88kRvHULYrJCfHrkI4G5bwjHHXSp8dRiOAfOe03gGRvEtS0zMi5k1dPiSS+R0yque9rtu4s6axdumzOiM8/vupID/FNGwW6/TVPaMYHvP/mYYzzAStR+1IAB7O3fFx1t6hPkaPQg0W6UL/tsIsObEnQfslCKAzgTBl00vTwmQ==",
+      "MD5OfBody": "ff3af181552786a1d7298dce331c6415",
+      "Body": "{"
+      Records
+      ":[{"
+      eventVersion
+      ":"
+      2.1
+      ","
+      eventSource
+      ":"
+      aws: s3
+      ","
+      awsRegion
+      ":"
+      eu-central-1
+      ","
+      eventTime
+      ":"
+      2022-02-13T16: 01
+      :
+      35.361Z
+      ","
+      eventName
+      ":"
+      ObjectCreated: Put
+      ","
+      userIdentity
+      ":{"
+      principalId
+      ":"
+      A239CX9T4R8ISE
+      "},"
+      requestParameters
+      ":{"
+      sourceIPAddress
+      ":"
+      213.193.1.145
+      "},"
+      responseElements
+      ":{"
+      x-amz-request-id
+      ":"
+      HWH2ZMKMGSJ880FX
+      ","
+      x-amz-id-2
+      ":"
+      8kCLIsTlQD6uU06wJyvoWySxhcAaukYM83mXGzX9HsQFrpkjxWDKclDUAgtDDhzwBT76tIMC3ayL/h5pnNY3GK5ljSQoFCOZ
+      "},"
+      s3
+      ":{"
+      s3SchemaVersion
+      ":"
+      1.0
+      ","
+      configurationId
+      ":"
+      CreateEvent
+      ","
+      bucket
+      ":{"
+      name
+      ":"
+      advde-backet2
+      ","
+      ownerIdentity
+      ":{"
+      principalId
+      ":"
+      A239CX9T4R8ISE
+      "},"
+      arn
+      ":"
+      arn: aws
+      :
+      s3:
+      :
+      :
+      advde-backet2
+      "},"
+      object
+      ":{"
+      key
+      ":"
+      JC-202201-citibike-tripdata.csv.zip
+      ","
+      size
+      ":815568,"
+      eTag
+      ":"
+      b0e8f122113298e77b01229b6797df22
+      ","
+      sequencer
+      ":"
+      0062092B5F480B4ACF
+      "}}}]}"
+    }
+  ],
+  "ResponseMetadata": {
+    "RequestId": "531adb0a-2447-5ea9-a498-818909f4554c",
+    "HTTPStatusCode": 200,
+    "HTTPHeaders": {
+      "x-amzn-requestid": "531adb0a-2447-5ea9-a498-818909f4554c",
+      "date": "Sun, 13 Feb 2022 16:01:55 GMT",
+      "content-type": "text/xml",
+      "content-length": "2038"
+    },
+    "RetryAttempts": 0
+  }
+}
