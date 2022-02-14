@@ -110,6 +110,45 @@ else:
                 raise AirflowSkipException()
             return unzipped
 
+        @task.virtualenv(
+            use_dill=True,
+            system_site_packages=False,
+            requirements=['clickhouse_driver', 'pandas'],
+        )
+        def load_data0(file):
+            def load_data(csv_file):
+                from clickhouse_driver import Client
+                import pandas as pd
+
+                client = Client(host='130.61.143.82', settings={'use_numpy': True})
+                client.execute('DROP TABLE IF EXISTS advdedb.ride')
+                client.execute(
+                    """
+                CREATE TABLE advdedb.ride (
+                	  ride_id             String
+                	, rideable_type       String
+                	, started_at          DateTime
+                	, ended_at            DateTime
+                	, start_station_name  String
+                	, start_station_id    String
+                	, end_station_name    String
+                	, end_station_id      String
+                	, start_lat           Float64
+                	, start_lng           Float64
+                	, end_lat             Float64
+                	, end_lng             Float64
+                	, member_casual       String 
+                 ) ENGINE = MergeTree ORDER BY (started_at)
+                 """)
+
+                data = pd.read_csv(csv_file)
+                inserted = client.insert_dataframe('INSERT INTO advdedb.ride VALUES',
+                                                   pd.DataFrame(data)
+                                                   )
+                return f'inserted: {inserted}'
+
+            return load_data(file)
+
         @task()
         def end_operation(data):
             print(f"End of DAG: {datetime.date}")
@@ -119,7 +158,8 @@ else:
         file_data = get_file_name(message=message)
         downloaded = download_file3(file_data["file"])
         unzipped = unzip_file0(downloaded)
-        end_operation(unzipped)
+        final_msg = load_data0(unzipped)
+        end_operation(final_msg)
 
 
     tutorial_etl_dag = advde3_taskflow()
