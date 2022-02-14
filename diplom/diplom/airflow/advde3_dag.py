@@ -231,15 +231,6 @@ else:
         def upload_rep2(repdata):
             upload_rep(repdata)
 
-        # @task
-        # def upload_rep3(repdata):
-        #     upload_rep(repdata)
-
-        # @task()
-        # def end_operation(data):
-        #     print(f"End of DAG: {datetime.date}")
-        #     print(f"final data: {data}")
-
         message = receive_message()
         file_data = get_file_name(message=message)
         downloaded = download_file3(file_data["file"])
@@ -249,7 +240,7 @@ else:
         upload_rep1(rep_data1)
         rep_data2 = report2(rep_data1)
         upload_rep2(rep_data2)
-        # end_operation(final_msg)
 
+        # не нашел поле пол в датасете
 
     tutorial_etl_dag = advde3_taskflow()

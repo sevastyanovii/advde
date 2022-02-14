@@ -34,6 +34,15 @@ CREATE TABLE advdedb.ride (
  """)
 
 data = pd.read_csv('C:\\Users\\vanio\\temp\\JC-202201-citibike-tripdata.csv')
+print(data.info())
+print('=================================')
+print(data.loc[0])
+print('=================================')
+print(data.loc[1])
+print('=================================')
+print(data.loc[2])
+print('=================================')
+
 print('inserted', client.insert_dataframe(
     'INSERT INTO advdedb.ride VALUES',
     pd.DataFrame(data)
