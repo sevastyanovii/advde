@@ -7,7 +7,7 @@ def receive_message():
 
     session = boto3.Session(
         aws_access_key_id='AKIAZB57MSK74V2NTKFO',
-        aws_secret_access_key='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'
+        aws_secret_access_key='ZlPcFNfpUASKgNupmo4aRYyqKmj44FGUPWvNCt'
     )
 
     # Then use the session to get the resource
