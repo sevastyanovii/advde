@@ -47,22 +47,26 @@ else:
 
         @task
         def init_params():
-            return {'par1': Variable.get('aws_access_key_id'), 'par2': Variable.get('aws_secret_access_key')}
+            val = {'par1': Variable.get('aws_access_key_id')
+                , 'par2': Variable.get('aws_secret_access_key')
+                , 'par3': Variable.get('clickhouse_secret_url')}
+            return val
+
 
         @task.virtualenv(
             use_dill=True,
             system_site_packages=False,
             requirements=['boto3'],
         )
-        def receive_message(params):
+        def receive_message(params0):
             import boto3
             import json
             import logging
 
-            print(f'Accepted params: {params}')
+            print(f'Accepted params: {params0}')
             session = boto3.Session(
-                params['par1']
-                , params['par2']
+                params0['par1']
+                , params0['par2']
             )
             sqs_client = session.client('sqs', region_name="eu-central-1")
 
