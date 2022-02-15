@@ -5,8 +5,8 @@ import zipfile
 import tempfile
 from airflow.exceptions import AirflowSkipException
 import os
-
 from airflow.decorators import dag, task
+from airflow.models import Variable
 
 log = logging.getLogger(__name__)
 
@@ -45,20 +45,24 @@ else:
                     else:
                         print(f'File "{zf}" is not zipped. Will be skipped...')
 
+        @task
+        def init_params():
+            return {'par1': Variable.get('aws_access_key_id'), 'par2': Variable.get('aws_secret_access_key')}
+
         @task.virtualenv(
             use_dill=True,
             system_site_packages=False,
             requirements=['boto3'],
         )
-        def receive_message():
+        def receive_message(params):
             import boto3
             import json
             import logging
 
-            # boto3.set_stream_logger('boto3.resources', logging.DEBUG)
+            print(f'Accepted params: {params}')
             session = boto3.Session(
-                aws_access_key_id='AKIAZB57MSK74V2NTKFO',
-                aws_secret_access_key='ZlPcFNfpUASKgNupmo4aRYyqKmj44FGUPWvNCt'
+                params['par1']
+                , params['par2']
             )
             sqs_client = session.client('sqs', region_name="eu-central-1")
 
@@ -95,8 +99,9 @@ else:
         def download_file3(file):
             import boto3
             s3 = boto3.resource(service_name='s3',
-                                aws_access_key_id='AKIAZB57MSK74V2NTKFO',
-                                aws_secret_access_key='ZlPcFNfpUASKgNupmo4aRYyqKmj44FGUPWvNCt')
+                                aws_access_key_id=Variable.get('aws_access_key_id')
+                                , aws_secret_access_key=Variable.get('aws_secret_access_key')
+                                )
             tmpfile = tempfile.NamedTemporaryFile(prefix='aws')
             tmpfile.close()
             s3.Bucket("advde-backet2").download_file(Key=file, Filename=tmpfile.name)
@@ -217,8 +222,9 @@ else:
 
             bucket = 'advde-bucket'
             s3 = boto3.resource('s3',
-                                aws_access_key_id='AKIAZB57MSK74V2NTKFO',
-                                aws_secret_access_key='ZlPcFNfpUASKgNupmo4aRYyqKmj44FGUPWvNCt')
+                                aws_access_key_id=Variable.get('aws_access_key_id')
+                                , aws_secret_access_key=Variable.get('aws_secret_access_key')
+                                )
             print(f'about to upload file {repdata["temp_file"]} to {repdata["repfile"]} on bucket {bucket}')
             s3.Bucket(bucket).upload_file(repdata["temp_file"], repdata["repfile"])
             print(f"Uploaded successfully: {repdata['repfile']} on bucket {bucket}")
@@ -231,7 +237,8 @@ else:
         def upload_rep2(repdata):
             upload_rep(repdata)
 
-        message = receive_message()
+        params = init_params()
+        message = receive_message(params)
         file_data = get_file_name(message=message)
         downloaded = download_file3(file_data["file"])
         unzipped = unzip_file0(downloaded)
