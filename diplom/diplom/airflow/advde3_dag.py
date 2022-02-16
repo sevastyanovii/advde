@@ -12,7 +12,7 @@ log = logging.getLogger(__name__)
 
 if not shutil.which("virtualenv"):
     log.warning(
-        "The 'advde2_dag' DAG requires virtualenv, please install it."
+        "The 'advde3_dag' DAG requires virtualenv, please install it."
     )
 else:
     @dag(schedule_interval=None, start_date=datetime(2021, 1, 1), catchup=False, tags=['advde'])
@@ -208,11 +208,11 @@ else:
 
             client = Client(host='130.61.143.82', settings={'use_numpy': True})
             data = client.query_dataframe("""
-                select avg(day_count) avg_count from (
-                    select toStartOfDay(started_at) trip_date, count(1) day_count
-                      from advdedb.ride
-                      group by toStartOfDay(started_at)
-                )
+                select toStartOfDay(started_at) rep_day
+                       , round(avg(dateDiff('minute', started_at, ended_at))) time_delta_minute
+                  from advdedb.ride
+                  group by toStartOfDay(started_at)
+                  order by rep_day
             """)
             report_file = f'rep2_{rep_data1["sfx"]}_{round(rnd.random() * 1000)}.csv'
             repfile_temp = create_temp_file0()
@@ -255,3 +255,12 @@ else:
         # не нашел поле пол в датасете
 
     tutorial_etl_dag = advde3_taskflow()
+
+
+"""
+    select toStartOfDay(started_at) rep_day
+           , round(avg(dateDiff('minute', started_at, ended_at))) time_delta_minute
+      from advdedb.ride
+      group by toStartOfDay(started_at)
+      order by rep_day
+"""

@@ -44,7 +44,7 @@ def print_contents():
         print(my_bucket_object)
 
 
-with open("./event_msg.json", "r") as f:
+with open("event_msg.json", "r") as f:
     d = f.read()
     file = get_file(d)
     print(file)
