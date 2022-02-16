@@ -5,10 +5,7 @@ import json
 def receive_message():
     # boto3.set_stream_logger('botocore', level='DEBUG')
 
-    session = boto3.Session(
-        aws_access_key_id='AKIAZB57MSK74V2NTKFO',
-        aws_secret_access_key='ZlPcFNfpUASKgNupmo4aRYyqKmj44FGUPWvNCt'
-    )
+    session = boto3.Session()
 
     # Then use the session to get the resource
     sqs_client = session.client('sqs', region_name="eu-central-1")

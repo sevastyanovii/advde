@@ -30,9 +30,7 @@ def download_file2():
 
 
 def download_file3():
-    s3 = boto3.resource(service_name='s3',
-                        aws_access_key_id='AKIAZB57MSK74V2NTKFO',
-                        aws_secret_access_key='ZlPcFNfpUASKgNupmo4aRYyqKmj44FGUPWvNCt')
+    s3 = boto3.resource(service_name='s3')
     tmpfile = tempfile.NamedTemporaryFile(prefix='aws')
     tmpfile.close()
     s3.Bucket("advde-backet2").download_file(Key='JC-201810-citibike-tripdata.csv.zip', Filename=tmpfile.name)
