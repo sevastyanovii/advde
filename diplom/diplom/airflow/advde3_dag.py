@@ -1,5 +1,6 @@
 import logging
 import shutil
+import sys
 from datetime import datetime
 import zipfile
 import tempfile
@@ -51,7 +52,6 @@ else:
                 , 'par2': Variable.get('aws_secret_access_key')
                 , 'par3': Variable.get('clickhouse_secret_url')}
             return val
-
 
         @task.virtualenv(
             use_dill=True,
@@ -131,30 +131,34 @@ else:
 
                 client = Client(host='130.61.143.82', settings={'use_numpy': True})
                 client.execute('DROP TABLE IF EXISTS advdedb.ride')
-                client.execute(
-                    """
-                CREATE TABLE advdedb.ride (
-                	  ride_id             String
-                	, rideable_type       String
-                	, started_at          DateTime
-                	, ended_at            DateTime
-                	, start_station_name  String
-                	, start_station_id    String
-                	, end_station_name    String
-                	, end_station_id      String
-                	, start_lat           Float64
-                	, start_lng           Float64
-                	, end_lat             Float64
-                	, end_lng             Float64
-                	, member_casual       String 
-                 ) ENGINE = MergeTree ORDER BY (started_at)
-                 """)
-
                 data = pd.read_csv(csv_file)
-                inserted = client.insert_dataframe('INSERT INTO advdedb.ride VALUES',
-                                                   pd.DataFrame(data)
-                                                   )
-                return f'inserted: {inserted}'
+                if ('ride_id' in data.columns):
+                    client.execute(
+                        """
+                    CREATE TABLE advdedb.ride (
+                          ride_id             String
+                        , rideable_type       String
+                        , started_at          DateTime
+                        , ended_at            DateTime
+                        , start_station_name  String
+                        , start_station_id    String
+                        , end_station_name    String
+                        , end_station_id      String
+                        , start_lat           Float64
+                        , start_lng           Float64
+                        , end_lat             Float64
+                        , end_lng             Float64
+                        , member_casual       String 
+                     ) ENGINE = MergeTree ORDER BY (started_at)
+                     """)
+
+                    inserted = client.insert_dataframe('INSERT INTO advdedb.ride VALUES',
+                                                       pd.DataFrame(data)
+                                                       )
+                    print('Inserted', inserted)
+                    return False
+                else:
+                    return True
 
             return load_data(file)
 
@@ -163,61 +167,71 @@ else:
             system_site_packages=False,
             requirements=['clickhouse_driver', 'pandas'],
         )
-        def report1(chain_message):
+        def report1(skip_other):
             from clickhouse_driver import Client
             import pandas as pd
             import random as rnd
             import tempfile
 
-            def create_temp_file0():
-                tmpfile = tempfile.NamedTemporaryFile(prefix='aws')
-                tmpfile.close()
-                return tmpfile.name
+            print('Accepted', skip_other)
 
-            client = Client(host='130.61.143.82', settings={'use_numpy': True})
-            data = client.query_dataframe("""
-            select toStartOfDay(started_at) trip_date, count(1) day_count
-              from advdedb.ride
-              group by toStartOfDay(started_at)
-              order by trip_date
-            """)
-            sfx = pd.to_datetime(data.loc[1]['trip_date']).strftime('%Y%m')
-            report_file = f'rep1_{sfx}_{round(rnd.random() * 1000)}.csv'
-            rep1file_temp = create_temp_file0()
-            data.to_csv(rep1file_temp, index=False)
-            print(f'created report1 file "{rep1file_temp}"')
-            return {"repfile": report_file, "temp_file": rep1file_temp, "sfx": sfx}
+            if (not skip_other):
+                def create_temp_file0():
+                    tmpfile = tempfile.NamedTemporaryFile(prefix='aws')
+                    tmpfile.close()
+                    return tmpfile.name
+
+                client = Client(host='130.61.143.82', settings={'use_numpy': True})
+                data = client.query_dataframe("""
+                select toStartOfDay(started_at) trip_date, count(1) day_count
+                  from advdedb.ride
+                  group by toStartOfDay(started_at)
+                  order by trip_date
+                """)
+                sfx = pd.to_datetime(data.loc[1]['trip_date']).strftime('%Y%m')
+                report_file = f'rep1_{sfx}_{round(rnd.random() * 1000)}.csv'
+                rep1file_temp = create_temp_file0()
+                data.to_csv(rep1file_temp, index=False)
+                print(f'created report1 file "{rep1file_temp}"')
+                return {"repfile": report_file, "temp_file": rep1file_temp, "sfx": sfx, "skip_other": False}
+            else:
+                return {"repfile": None, "temp_file": None, "sfx":  None, "skip_other": True}
 
         @task.virtualenv(
             use_dill=True,
             system_site_packages=False,
             requirements=['clickhouse_driver', 'pandas'],
         )
-        def report2(rep_data1):
+        def report2(skip_other):
             from clickhouse_driver import Client
             import pandas as pd
             import random as rnd
             import tempfile
 
-            def create_temp_file0():
-                tmpfile = tempfile.NamedTemporaryFile(prefix='aws')
-                tmpfile.close()
-                return tmpfile.name
+            print('Accepted', skip_other)
 
-            print(f'report2 accepted previous rep_data1: {rep_data1}')
+            if (not skip_other):
+                def create_temp_file0():
+                    tmpfile = tempfile.NamedTemporaryFile(prefix='aws')
+                    tmpfile.close()
+                    return tmpfile.name
 
-            client = Client(host='130.61.143.82', settings={'use_numpy': True})
-            data = client.query_dataframe("""
-                select toStartOfDay(started_at) rep_day
-                       , round(avg(dateDiff('minute', started_at, ended_at))) time_delta_minute
-                  from advdedb.ride
-                  group by toStartOfDay(started_at)
-                  order by rep_day
-            """)
-            report_file = f'rep2_{rep_data1["sfx"]}_{round(rnd.random() * 1000)}.csv'
-            repfile_temp = create_temp_file0()
-            data.to_csv(repfile_temp, index=False)
-            return {"repfile": report_file, "temp_file": repfile_temp, "sfx": rep_data1['sfx']}
+                client = Client(host='130.61.143.82', settings={'use_numpy': True})
+                sfx = pd.to_datetime(client.query_dataframe("select started_at from advdedb.ride limit 1").loc[0]['started_at']).strftime('%Y%m')
+                data = client.query_dataframe("""
+                    select toStartOfDay(started_at) rep_day
+                           , round(avg(dateDiff('minute', started_at, ended_at))) time_delta_minute
+                      from advdedb.ride
+                      group by toStartOfDay(started_at)
+                      order by rep_day
+                """)
+                report_file = f'rep2_{sfx}_{round(rnd.random() * 1000)}.csv'
+                repfile_temp = create_temp_file0()
+                data.to_csv(repfile_temp, index=False)
+                return {"repfile": report_file, "temp_file": repfile_temp, "sfx": sfx, "skip_other": False}
+            else:
+                return {"repfile": None, "temp_file": None, "sfx": None, "skip_other": True}
+
 
         def upload_rep(repdata):
             import boto3
@@ -235,32 +249,194 @@ else:
 
         @task
         def upload_rep1(repdata):
-            upload_rep(repdata)
+            if not repdata['skip_other']:
+                upload_rep(repdata)
 
         @task
         def upload_rep2(repdata):
-            upload_rep(repdata)
+            if not repdata['skip_other']:
+                upload_rep(repdata)
 
         params = init_params()
         message = receive_message(params)
         file_data = get_file_name(message=message)
         downloaded = download_file3(file_data["file"])
         unzipped = unzip_file0(downloaded)
-        final_msg = load_data0(unzipped)
-        rep_data1 = report1(final_msg)
+        load_result_v1 = load_data0(unzipped)
+        rep_data1 = report1(load_result_v1)
         upload_rep1(rep_data1)
-        rep_data2 = report2(rep_data1)
+        rep_data2 = report2(load_result_v1)
         upload_rep2(rep_data2)
 
-        # не нашел поле пол в датасете
+        @task.virtualenv(
+            use_dill=True,
+            system_site_packages=False,
+            requirements=['clickhouse_driver', 'pandas'],
+        )
+        def load_data0_v2(file):
+            def load_data(csv_file):
+                from clickhouse_driver import Client
+                import pandas as pd
+
+                client = Client(host='130.61.143.82', settings={'use_numpy': True})
+                client.execute('DROP TABLE IF EXISTS advdedb.ride_v2')
+                data = pd.read_csv(csv_file)
+                if ('tripduration' in data.columns):
+
+                    client.execute(
+                        """
+                        CREATE TABLE advdedb.ride_v2 (
+                             "tripduration" Float64
+                           , "starttime" DateTime
+                           , "stoptime" DateTime
+                           , "start station id" Float64
+                           , "start station name" String
+                           , "start station latitude" Float64
+                           , "start station longitude" Float64
+                           , "end station id" Float64
+                           , "end station name" String
+                           , "end station latitude" Float64
+                           , "end station longitude" Float64
+                           , "bikeid" Float64
+                           , "usertype" String
+                           , "birth year" Int64
+                           , "gender" Int64
+                        ) ENGINE = MergeTree ORDER BY ("starttime")
+                     """)
+
+                    inserted = client.insert_dataframe('INSERT INTO advdedb.ride_v2 VALUES', pd.DataFrame(data))
+                    print('Inserted rows', inserted)
+                    return False
+                else:
+                    return True
+
+            return load_data(file)
+
+        @task.virtualenv(
+            use_dill=True,
+            system_site_packages=False,
+            requirements=['clickhouse_driver', 'pandas'],
+        )
+        def report1_v2(skip_other):
+            from clickhouse_driver import Client
+            import pandas as pd
+            import random as rnd
+            import tempfile
+
+            print('Accepted', skip_other)
+
+            if not skip_other:
+                def create_temp_file0():
+                    tmpfile = tempfile.NamedTemporaryFile(prefix='aws')
+                    tmpfile.close()
+                    return tmpfile.name
+
+                client = Client(host='130.61.143.82', settings={'use_numpy': True})
+                data = client.query_dataframe("""
+                select toStartOfDay(starttime) trip_date, count(1) day_count
+                  from advdedb.ride_v2
+                  group by toStartOfDay(starttime)
+                  order by trip_date
+                """)
+                sfx = pd.to_datetime(data.loc[1]['trip_date']).strftime('%Y%m')
+                report_file = f'rep1_{sfx}_{round(rnd.random() * 1000)}.csv'
+                rep1file_temp = create_temp_file0()
+                data.to_csv(rep1file_temp, index=False)
+                print(f'created report1 file "{rep1file_temp}"')
+                return {"repfile": report_file, "temp_file": rep1file_temp, "sfx": sfx, "skip_other": False}
+            else:
+                return {"repfile": None, "temp_file": None, "sfx": None, "skip_other": True}
+
+        @task.virtualenv(
+            use_dill=True,
+            system_site_packages=False,
+            requirements=['clickhouse_driver', 'pandas'],
+        )
+        def report2_v2(skip_other):
+            from clickhouse_driver import Client
+            import pandas as pd
+            import random as rnd
+            import tempfile
+
+            print('Accepted', skip_other)
+
+            if not skip_other:
+                def create_temp_file0():
+                    tmpfile = tempfile.NamedTemporaryFile(prefix='aws')
+                    tmpfile.close()
+                    return tmpfile.name
+
+                client = Client(host='130.61.143.82', settings={'use_numpy': True})
+                data = client.query_dataframe("""
+                    select toStartOfDay(starttime) rep_day
+                           , round(avg(dateDiff('minute', starttime, stoptime))) time_delta_minute
+                      from advdedb.ride_v2
+                      group by toStartOfDay(starttime)
+                      order by rep_day
+                """)
+                sfx = pd.to_datetime(client.query_dataframe("select starttime from advdedb.ride_v2 limit 1").loc[0]['starttime']).strftime('%Y%m')
+
+                report_file = f'rep2_{sfx}_{round(rnd.random() * 1000)}.csv'
+                repfile_temp = create_temp_file0()
+                data.to_csv(repfile_temp, index=False)
+                return {"repfile": report_file, "temp_file": repfile_temp, "sfx": sfx, "skip_other": False}
+            else:
+                return {"repfile": None, "temp_file": None, "sfx": None, "skip_other": True}
+
+        @task.virtualenv(
+            use_dill=True,
+            system_site_packages=False,
+            requirements=['clickhouse_driver', 'pandas'],
+        )
+        def report3_v2(skip_other):
+            from clickhouse_driver import Client
+            import pandas as pd
+            import random as rnd
+            import tempfile
+
+            print('Accepted', skip_other)
+
+            if not skip_other:
+                def create_temp_file0():
+                    tmpfile = tempfile.NamedTemporaryFile(prefix='aws')
+                    tmpfile.close()
+                    return tmpfile.name
+
+                client = Client(host='130.61.143.82', settings={'use_numpy': True})
+
+                sfx = pd.to_datetime(client.query_dataframe("select starttime from advdedb.ride_v2 limit 1").loc[0]['starttime']).strftime('%Y%m')
+                data = client.query_dataframe("""
+                    select count(1) count_trip, gender from advdedb.ride_v2 group by gender order by gender
+                """)
+                report_file = f'rep3_{sfx}_{round(rnd.random() * 1000)}.csv'
+                repfile_temp = create_temp_file0()
+                data.to_csv(repfile_temp, index=False)
+                return {"repfile": report_file, "temp_file": repfile_temp, "sfx": sfx, "skip_other": False}
+            else:
+                return {"repfile": None, "temp_file": None, "sfx": None, "skip_other": True}
+
+        @task
+        def upload_rep1_v2(repdata):
+            if not repdata['skip_other']:
+                upload_rep(repdata)
+
+        @task
+        def upload_rep2_v2(repdata):
+            if not repdata['skip_other']:
+                upload_rep(repdata)
+
+        @task
+        def upload_rep3_v2(repdata):
+            if not repdata['skip_other']:
+                upload_rep(repdata)
+
+        # вторая ветка
+        load_result = load_data0_v2(unzipped)
+        rep_data1_v2 = report1_v2(load_result)
+        upload_rep1_v2(rep_data1_v2)
+        rep_data2_v2 = report2_v2(load_result)
+        upload_rep2_v2(rep_data2_v2)
+        rep_data3_v2 = report3_v2(load_result)
+        upload_rep3_v2(rep_data3_v2)
 
     tutorial_etl_dag = advde3_taskflow()
-
-
-"""
-    select toStartOfDay(started_at) rep_day
-           , round(avg(dateDiff('minute', started_at, ended_at))) time_delta_minute
-      from advdedb.ride
-      group by toStartOfDay(started_at)
-      order by rep_day
-"""
