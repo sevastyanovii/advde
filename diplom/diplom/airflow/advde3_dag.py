@@ -69,25 +69,29 @@ else:
                 , params0['par2']
             )
             sqs_client = session.client('sqs', region_name="eu-central-1")
-
+            queue_url = "https://sqs.eu-central-1.amazonaws.com/622634767039/AdvdeQueue"
             response = sqs_client.receive_message(
-                QueueUrl="https://sqs.eu-central-1.amazonaws.com/622634767039/AdvdeQueue",
+                QueueUrl=queue_url,
                 MaxNumberOfMessages=1,
                 WaitTimeSeconds=3,
             )
             print(f"Original response: {response}")
             print(f"Number of messages received: {len(response.get('Messages', []))}")
 
-            for message in response.get("Messages", []):
-                print("message\n", message)
-                print("\n")
-
-                message_body = message["Body"]
+            if len(response.get('Messages', [])) == 1:
+                sqs_message = response.get("Messages", [])[0]
+                message_body = sqs_message["Body"]
+                handle = sqs_message['ReceiptHandle']
                 print(f"Message body: {json.loads(message_body)}")
-                print(f"Receipt Handle: {message['ReceiptHandle']}")
-                return message_body
+                print(f"Receipt Handle: {handle}")
 
-            return ""
+                sqs_client.delete_message(
+                    QueueUrl=queue_url,
+                    ReceiptHandle=handle
+                )
+                return message_body
+            else:
+                return ""
 
         @task(multiple_outputs=True)
         def get_file_name(message):
